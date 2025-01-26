@@ -101,6 +101,10 @@ namespace back_end.Migrations
                     b.Property<bool>("UserType")
                         .HasColumnType("bit");
 
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
                     b.ToTable("Users");

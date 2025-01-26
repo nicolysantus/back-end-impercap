@@ -1,11 +1,13 @@
 ﻿using back_end.Data;
-using back_end.Models;  
+using back_end.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace back_end.API.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
     public class ManualController : ControllerBase
     {

@@ -11,7 +11,7 @@ using back_end.Data;
 namespace back_end.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250118231833_CreateDb")]
+    [Migration("20250120030742_CreateDb")]
     partial class CreateDb
     {
         /// <inheritdoc />
@@ -103,6 +103,10 @@ namespace back_end.Migrations
 
                     b.Property<bool>("UserType")
                         .HasColumnType("bit");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 

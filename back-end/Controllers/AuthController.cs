@@ -26,18 +26,20 @@ namespace back_end.API.Controllers
         {
             if (loginModel == null || string.IsNullOrEmpty(loginModel.Username) || string.IsNullOrEmpty(loginModel.Password))
             {
-                return BadRequest("Usuário e senha são obrigatórios.");
+                return BadRequest("Usuário e senha são obrigatórios."); // Não retorna a senha aqui
             }
 
             var user = _context.Users.SingleOrDefault(u => u.Username == loginModel.Username);
 
+            // Verifica se o usuário existe e se a senha está correta
             if (user == null || !BCrypt.Net.BCrypt.Verify(loginModel.Password, user.Password))
             {
-                return Unauthorized("Credenciais inválidas.");
+                return Unauthorized("Credenciais inválidas."); // Não retorna a senha aqui
             }
 
+            // Gera o token JWT
             var token = GenerateJwtToken(user);
-            return Ok(new { Token = token });
+            return Ok(new { Token = token }); // Retorna apenas o token, não a senha
         }
 
         private string GenerateJwtToken(UserModel user)
@@ -53,18 +55,18 @@ namespace back_end.API.Controllers
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
-{
-    new Claim(JwtRegisteredClaimNames.Sub, user.Username ?? "unknown"),
-    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            {
+new Claim(JwtRegisteredClaimNames.Sub, user.Username ?? "unknown"),
+new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
 };
 
 
             var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
-                signingCredentials: credentials
+            issuer: _configuration["Jwt:Issuer"],
+            audience: _configuration["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddHours(1),
+            signingCredentials: credentials
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);

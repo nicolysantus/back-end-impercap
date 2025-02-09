@@ -25,7 +25,7 @@ namespace back_end.API.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<ManualModel>> GetManual(int id)
+        public async Task<ActionResult<ManualModel>> GetManual(Guid id)
         {
             var manual = await _context.Manuals.FindAsync(id);
 
@@ -40,26 +40,43 @@ namespace back_end.API.Controllers
         [HttpPost]
         public async Task<ActionResult<ManualModel>> CreateManual(ManualModel manual)
         {
+            manual.Id = Guid.NewGuid(); // Garante um ID único ao criar um novo registro
             _context.Manuals.Add(manual);
             await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetManual), new { id = manual.Id }, manual);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateManual(int id, ManualModel manual)
+        public async Task<IActionResult> UpdateManual(Guid id, ManualModel manual)
         {
-            if (id != manual.Id)
+            if (id != manual.Id) // Comparação correta de Guids
             {
-                return BadRequest();
+                return BadRequest("O ID informado não corresponde ao ID do manual.");
             }
 
             _context.Entry(manual).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!ManualExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
             return NoContent();
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteManual(int id)
+        public async Task<IActionResult> DeleteManual(Guid id)
         {
             var manual = await _context.Manuals.FindAsync(id);
             if (manual == null)
@@ -70,6 +87,11 @@ namespace back_end.API.Controllers
             _context.Manuals.Remove(manual);
             await _context.SaveChangesAsync();
             return NoContent();
+        }
+
+        private bool ManualExists(Guid id)
+        {
+            return _context.Manuals.Any(e => e.Id == id);
         }
     }
 }

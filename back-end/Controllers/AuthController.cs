@@ -39,9 +39,23 @@ namespace back_end.API.Controllers
 
             // Gera o token JWT
             var token = GenerateJwtToken(user);
-            return Ok(new { Token = token }); // Retorna apenas o token, não a senha
-        }
 
+            // Retorna o token e o CPF somente se a senha for igual ao CPF
+            if (loginModel.Password == user.CPF)
+            {
+                return Ok(new
+                {
+                    CPF = user.CPF
+                }); // Retorna CPF
+            }
+            else
+            {
+                return Ok(new
+                {
+                    Token = token
+                }); // Retorna apenas o token
+            }
+        }
         private string GenerateJwtToken(UserModel user)
         {
             var key = _configuration["Jwt:Key"];

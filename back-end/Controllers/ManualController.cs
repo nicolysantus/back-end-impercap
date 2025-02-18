@@ -1,166 +1,105 @@
 ﻿using back_end.Data;
-
 using back_end.Models;
-
 using Microsoft.AspNetCore.Authorization;
-
 using Microsoft.AspNetCore.Mvc;
-
 using Microsoft.EntityFrameworkCore;
-
 using System.IO;
-
 using System.Threading.Tasks;
-
 namespace back_end.API.Controllers
 
 {
-
     [Route("api/[controller]")]
-
     [Authorize]
-
     [ApiController]
 
     public class ManualController : ControllerBase
 
     {
-
         private readonly AppDbContext _context;
 
         public ManualController(AppDbContext context)
 
         {
-
             _context = context;
-
         }
 
         // GET: api/manual
-
         [HttpGet]
-
         public async Task<ActionResult<IEnumerable<ManualModel>>> GetManuais()
-
         {
-
             return await _context.Manuals.ToListAsync();
-
         }
 
         // GET: api/manual/{id}
-
         [HttpGet("{id}")]
-
         public async Task<ActionResult<ManualModel>> GetManual(Guid id)
 
         {
-
             var manual = await _context.Manuals.FindAsync(id);
-
             if (manual == null)
-
             {
-
                 return NotFound();
-
             }
-
             return manual;
 
         }
 
         // POST: api/manual
-
         [HttpPost]
-
         public async Task<ActionResult<ManualModel>> CreateManual([FromForm] CreateManualRequest request)
 
         {
-
             var manual = new ManualModel
-
             {
-
                 Id = Guid.NewGuid(),
-
                 Title = request.Title,
-
                 Description = request.Description,
-
                 VideoUrl = request.VideoUrl,
-
             };
 
-            // Definindo os caminhos das pastas
-
             string imagePath = Path.Combine("uploads/images");
-
             string manualPath = Path.Combine("uploads/manuals");
-
             string laudoPath = Path.Combine("uploads/laudos");
 
-            // Criando as pastas se não existirem
 
             if (!Directory.Exists(imagePath))
-
             {
-
                 Directory.CreateDirectory(imagePath);
-
             }
 
             if (!Directory.Exists(manualPath))
-
             {
-
                 Directory.CreateDirectory(manualPath);
-
             }
 
             if (!Directory.Exists(laudoPath))
-
             {
-
                 Directory.CreateDirectory(laudoPath);
-
             }
 
-            // Lógica para salvar os arquivos
-
             if (request.ImageUrl != null)
-
             {
-
                 var fullImagePath = Path.Combine(imagePath, request.ImageUrl.FileName);
 
                 using (var stream = new FileStream(fullImagePath, FileMode.Create))
-
                 {
-
                     await request.ImageUrl.CopyToAsync(stream);
-
                 }
-
-                manual.ImageUrl = fullImagePath; // Ou a URL correspondente
+                manual.ImageUrl = fullImagePath;
 
             }
 
             if (request.ManualPdfUrl != null)
-
             {
-
                 var fullManualPath = Path.Combine(manualPath, request.ManualPdfUrl.FileName);
 
                 using (var stream = new FileStream(fullManualPath, FileMode.Create))
 
                 {
-
                     await request.ManualPdfUrl.CopyToAsync(stream);
-
                 }
 
-                manual.ManualPdfUrl = fullManualPath; // Ou a URL correspondente
+                manual.ManualPdfUrl = fullManualPath; 
 
             }
 
@@ -178,7 +117,7 @@ namespace back_end.API.Controllers
 
                 }
 
-                manual.LaudoPdfUrl = fullLaudoPath; // Ou a URL correspondente
+                manual.LaudoPdfUrl = fullLaudoPath; 
 
             }
 
@@ -194,54 +133,83 @@ namespace back_end.API.Controllers
         // PUT: api/manual/{id}
 
         [HttpPut("{id}")]
-
-        public async Task<IActionResult> UpdateManual(Guid id, ManualModel manual)
-
+        public async Task<IActionResult> UpdateManual(Guid id, [FromForm] CreateManualRequest request)
         {
-
-            if (id != manual.Id) // Comparação correta de Guids
-
+            var existingManual = await _context.Manuals.FindAsync(id);
+            if (existingManual == null)
             {
-
-                return BadRequest("O ID informado não corresponde ao ID do manual.");
-
+                return NotFound();
             }
 
-            _context.Entry(manual).State = EntityState.Modified;
-
-            try
-
+            if (request.Title != null)
             {
-
-                await _context.SaveChangesAsync();
-
+                existingManual.Title = request.Title;
             }
 
-            catch (DbUpdateConcurrencyException)
-
+            if (request.Description != null)
             {
+                existingManual.Description = request.Description;
+            }
 
-                if (!ManualExists(id))
+            if (request.VideoUrl != null)
+            {
+                existingManual.VideoUrl = request.VideoUrl;
+            }
 
+            string imagePath = Path.Combine("uploads/images");
+            string manualPath = Path.Combine("uploads/manuals");
+            string laudoPath = Path.Combine("uploads/laudos");
+
+            if (!Directory.Exists(imagePath))
+            {
+                Directory.CreateDirectory(imagePath);
+            }
+
+            if (!Directory.Exists(manualPath))
+            {
+                Directory.CreateDirectory(manualPath);
+            }
+
+            if (!Directory.Exists(laudoPath))
+            {
+                Directory.CreateDirectory(laudoPath);
+            }
+
+            if (request.ImageUrl != null)
+            {
+                var fullImagePath = Path.Combine(imagePath, request.ImageUrl.FileName);
+                using (var stream = new FileStream(fullImagePath, FileMode.Create))
                 {
-
-                    return NotFound();
-
+                    await request.ImageUrl.CopyToAsync(stream);
                 }
-
-                else
-
-                {
-
-                    throw;
-
-                }
-
+                existingManual.ImageUrl = fullImagePath;
             }
+
+            if (request.ManualPdfUrl != null)
+            {
+                var fullManualPath = Path.Combine(manualPath, request.ManualPdfUrl.FileName);
+                using (var stream = new FileStream(fullManualPath, FileMode.Create))
+                {
+                    await request.ManualPdfUrl.CopyToAsync(stream);
+                }
+                existingManual.ManualPdfUrl = fullManualPath;
+            }
+
+            if (request.LaudoPdfUrl != null)
+            {
+                var fullLaudoPath = Path.Combine(laudoPath, request.LaudoPdfUrl.FileName);
+                using (var stream = new FileStream(fullLaudoPath, FileMode.Create))
+                {
+                    await request.LaudoPdfUrl.CopyToAsync(stream);
+                }
+                existingManual.LaudoPdfUrl = fullLaudoPath;
+            }
+
+            await _context.SaveChangesAsync();
 
             return NoContent();
-
         }
+
 
         // DELETE: api/manual/{id}
 
@@ -272,11 +240,7 @@ namespace back_end.API.Controllers
         private bool ManualExists(Guid id)
 
         {
-
             return _context.Manuals.Any(e => e.Id == id);
-
         }
-
     }
-
 }

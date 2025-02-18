@@ -47,7 +47,6 @@ namespace back_end.API.Controllers
         // POST: api/manual
         [HttpPost]
         public async Task<ActionResult<ManualModel>> CreateManual([FromForm] CreateManualRequest request)
-
         {
             var manual = new ManualModel
             {
@@ -57,76 +56,62 @@ namespace back_end.API.Controllers
                 VideoUrl = request.VideoUrl,
             };
 
+            // Definindo os caminhos das pastas
             string imagePath = Path.Combine("uploads/images");
             string manualPath = Path.Combine("uploads/manuals");
             string laudoPath = Path.Combine("uploads/laudos");
 
-
+            // Criando as pastas se não existirem
             if (!Directory.Exists(imagePath))
             {
                 Directory.CreateDirectory(imagePath);
             }
-
             if (!Directory.Exists(manualPath))
             {
                 Directory.CreateDirectory(manualPath);
             }
-
             if (!Directory.Exists(laudoPath))
             {
                 Directory.CreateDirectory(laudoPath);
             }
 
+            // Lógica para salvar os arquivos e criar URLs
+            string baseUrl = $"{Request.Scheme}://{Request.Host}/"; // URL base para acessar os arquivos
+
             if (request.ImageUrl != null)
             {
                 var fullImagePath = Path.Combine(imagePath, request.ImageUrl.FileName);
-
                 using (var stream = new FileStream(fullImagePath, FileMode.Create))
                 {
                     await request.ImageUrl.CopyToAsync(stream);
                 }
-                manual.ImageUrl = fullImagePath;
-
+                manual.ImageUrl = $"{baseUrl}uploads/images/{request.ImageUrl.FileName}"; // URL acessível
             }
 
             if (request.ManualPdfUrl != null)
             {
                 var fullManualPath = Path.Combine(manualPath, request.ManualPdfUrl.FileName);
-
                 using (var stream = new FileStream(fullManualPath, FileMode.Create))
-
                 {
                     await request.ManualPdfUrl.CopyToAsync(stream);
                 }
-
-                manual.ManualPdfUrl = fullManualPath; 
-
+                manual.ManualPdfUrl = $"{baseUrl}uploads/manuals/{request.ManualPdfUrl.FileName}"; // URL acessível
             }
 
             if (request.LaudoPdfUrl != null)
-
             {
-
                 var fullLaudoPath = Path.Combine(laudoPath, request.LaudoPdfUrl.FileName);
-
                 using (var stream = new FileStream(fullLaudoPath, FileMode.Create))
-
                 {
-
                     await request.LaudoPdfUrl.CopyToAsync(stream);
-
                 }
-
-                manual.LaudoPdfUrl = fullLaudoPath; 
-
+                manual.LaudoPdfUrl = $"{baseUrl}uploads/laudos/{request.LaudoPdfUrl.FileName}"; // URL acessível
             }
 
             _context.Manuals.Add(manual);
-
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetManual), new { id = manual.Id }, manual);
-
         }
 
 
@@ -156,24 +141,26 @@ namespace back_end.API.Controllers
                 existingManual.VideoUrl = request.VideoUrl;
             }
 
+            // Definindo os caminhos das pastas
             string imagePath = Path.Combine("uploads/images");
             string manualPath = Path.Combine("uploads/manuals");
             string laudoPath = Path.Combine("uploads/laudos");
 
+            // Criando as pastas se não existirem
             if (!Directory.Exists(imagePath))
             {
                 Directory.CreateDirectory(imagePath);
             }
-
             if (!Directory.Exists(manualPath))
             {
                 Directory.CreateDirectory(manualPath);
             }
-
             if (!Directory.Exists(laudoPath))
             {
                 Directory.CreateDirectory(laudoPath);
             }
+
+            string baseUrl = $"{Request.Scheme}://{Request.Host}/"; // URL base para acessar os arquivos
 
             if (request.ImageUrl != null)
             {
@@ -182,7 +169,7 @@ namespace back_end.API.Controllers
                 {
                     await request.ImageUrl.CopyToAsync(stream);
                 }
-                existingManual.ImageUrl = fullImagePath;
+                existingManual.ImageUrl = $"{baseUrl}uploads/images/{request.ImageUrl.FileName}"; // URL acessível
             }
 
             if (request.ManualPdfUrl != null)
@@ -192,7 +179,7 @@ namespace back_end.API.Controllers
                 {
                     await request.ManualPdfUrl.CopyToAsync(stream);
                 }
-                existingManual.ManualPdfUrl = fullManualPath;
+                existingManual.ManualPdfUrl = $"{baseUrl}uploads/manuals/{request.ManualPdfUrl.FileName}"; // URL acessível
             }
 
             if (request.LaudoPdfUrl != null)
@@ -202,7 +189,7 @@ namespace back_end.API.Controllers
                 {
                     await request.LaudoPdfUrl.CopyToAsync(stream);
                 }
-                existingManual.LaudoPdfUrl = fullLaudoPath;
+                existingManual.LaudoPdfUrl = $"{baseUrl}uploads/laudos/{request.LaudoPdfUrl.FileName}"; // URL acessível
             }
 
             await _context.SaveChangesAsync();

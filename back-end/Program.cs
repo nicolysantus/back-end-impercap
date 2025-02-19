@@ -92,7 +92,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Configuração do Swagger
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     // Configuração do Swagger
     app.UseSwagger();

@@ -23,6 +23,11 @@ FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "back-end.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
+# Etapa de Runtime (com SDK)
+FROM mcr.microsoft.com/dotnet/sdk:9.0
+WORKDIR /app
+COPY --from=build /app/publish .
+
 # Esta fase é usada na produção ou quando executada no VS no modo normal (padrão quando não está usando a configuração de Depuração)
 FROM base AS final
 WORKDIR /app

@@ -13,19 +13,19 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 );
 
 // Configuração do CORS
-var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
-
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(MyAllowSpecificOrigins,
+    options.AddPolicy("_myAllowSpecificOrigins",
         policy =>
         {
-            policy.WithOrigins("http://10.65.2.235:8081") // Permitir apenas essa origem
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
+            policy.AllowAnyOrigin() // Permitir qualquer origem
+                  .AllowAnyMethod() // Permitir qualquer método
+                  .AllowAnyHeader(); // Permitir qualquer cabeçalho
         });
 });
 
+// Outros serviços
+builder.Services.AddControllers();
 
 // Configuração do JWT
 var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT key is missing in appsettings.json.");
@@ -33,7 +33,7 @@ var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationExcep
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.RequireHttpsMetadata = false; // Para desenvolvimento, ajuste conforme necessário
+        options.RequireHttpsMetadata = true;
         options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -82,19 +82,25 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Aplicação do CORS antes da autenticação
-app.UseCors(MyAllowSpecificOrigins);
+// Aplicar CORS antes da autenticação
+app.UseCors("_myAllowSpecificOrigins");
 
-// Configuração do Swagger
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
+// Outros middlewares
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Configuração do Swagger
+if (app.Environment.IsDevelopment())
+{
+    // Configuração do Swagger
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+        c.RoutePrefix = "swagger"; // ou "" para acessá-lo na raiz
+    }); ;
+}
 
 app.Run();

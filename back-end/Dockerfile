@@ -12,21 +12,21 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["back-end/back-end.csproj", "back-end/"]
-RUN dotnet restore "./back-end/back-end.csproj"
+COPY ["back-end.csproj", "."]
+RUN dotnet restore "back-end.csproj"
 COPY . .
-WORKDIR "/src/back-end"
-RUN dotnet build "./back-end.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src"
+RUN dotnet build "back-end.csproj" -c $BUILD_CONFIGURATION -o /app/build
+
+# Esta fase é usada para publicar o projeto de serviço a ser copiado para a fase final
+FROM build AS publish
+ARG BUILD_CONFIGURATION=Release
+RUN dotnet publish "back-end.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # Etapa de Runtime (com SDK)
 FROM mcr.microsoft.com/dotnet/sdk:9.0
 WORKDIR /app
 COPY --from=build /app/publish .
-
-# Esta fase é usada para publicar o projeto de serviço a ser copiado para a fase final
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./back-end.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # Esta fase é usada na produção ou quando executada no VS no modo normal (padrão quando não está usando a configuração de Depuração)
 FROM base AS final

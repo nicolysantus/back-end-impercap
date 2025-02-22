@@ -81,34 +81,75 @@ namespace back_end.API.Controllers
 
         [HttpPut("{id}")]
         [Authorize]
-        public async Task<IActionResult> UpdateUser(Guid id, UserModel user)
+        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UserModel user)
         {
-            if (id != user.Id)
+            var existingUser = await _context.Users.FindAsync(id);
+            if (existingUser == null)
             {
-                return BadRequest(new
+                return NotFound(new
                 {
-                    status = 400,
-                    message = "O ID do usuário fornecido não corresponde ao ID do usuário a ser atualizado.",
+                    status = 404,
+                    message = "Usuário não encontrado.",
                     traceId = HttpContext.TraceIdentifier
                 });
             }
 
-            // Se a senha foi fornecida, criptografa a nova senha
-            if (!string.IsNullOrWhiteSpace(user.Password))
+            if (!string.IsNullOrWhiteSpace(user.Username))
             {
-                user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
-            }
-            else
-            {
-                // Mantém a senha existente no banco
-                var existingUser = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
-                if (existingUser != null)
-                {
-                    user.Password = existingUser.Password;
-                }
+                existingUser.Username = user.Username;
             }
 
-            _context.Entry(user).State = EntityState.Modified;
+            existingUser.UserType = user.UserType; // Booleano, sempre atualizado
+
+            if (!string.IsNullOrWhiteSpace(user.FirstName))
+            {
+                existingUser.FirstName = user.FirstName;
+            }
+
+            if (!string.IsNullOrWhiteSpace(user.LastName))
+            {
+                existingUser.LastName = user.LastName;
+            }
+
+            if (!string.IsNullOrWhiteSpace(user.CPF))
+            {
+                existingUser.CPF = user.CPF;
+            }
+
+            if (!string.IsNullOrWhiteSpace(user.DateOfBirth))
+            {
+                existingUser.DateOfBirth = user.DateOfBirth;
+            }
+
+            if (!string.IsNullOrWhiteSpace(user.Email))
+            {
+                existingUser.Email = user.Email;
+            }
+
+            if (!string.IsNullOrWhiteSpace(user.Address))
+            {
+                existingUser.Address = user.Address;
+            }
+
+            if (!string.IsNullOrWhiteSpace(user.Number))
+            {
+                existingUser.Number = user.Number;
+            }
+
+            if (!string.IsNullOrWhiteSpace(user.Neighborhood))
+            {
+                existingUser.Neighborhood = user.Neighborhood;
+            }
+
+            if (!string.IsNullOrWhiteSpace(user.City))
+            {
+                existingUser.City = user.City;
+            }
+
+            if (!string.IsNullOrWhiteSpace(user.Password))
+            {
+                existingUser.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+            }
 
             try
             {
@@ -130,6 +171,7 @@ namespace back_end.API.Controllers
 
             return NoContent();
         }
+
 
         [HttpDelete("{id}")]
         [Authorize]

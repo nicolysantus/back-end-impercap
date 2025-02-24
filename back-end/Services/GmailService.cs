@@ -9,37 +9,37 @@ using System.Text;
 
 public class GmailService : IEmailService
 {
-    private static readonly string[] Scopes = { Google.Apis.Gmail.v1.GmailService.Scope.GmailSend };
-    private static readonly string ApplicationName = "Gmail API .NET Quickstart";
-    private Stream stream;
+    private readonly GmailServiceHelper _gmailServiceHelper;
+
+    public GmailService(string credentialPath, string tokenPath)
+    {
+        _gmailServiceHelper = new GmailServiceHelper(credentialPath, tokenPath);
+    }
 
     public async Task SendRecoveryEmail(string userEmail, string token)
     {
-        UserCredential credential;
+        var service = await _gmailServiceHelper.GetGmailServiceAsync();
 
-        // Carregar as credenciais
-        var redirectUri = "http://localhost:7040"; // Coloque a URI que você registrou no Google aqui
+        // Monta o e-mail em HTML
+        var emailBody = $@"
+    <html>
+    <body>
+        <h2>Impercap Suporte</h2>
+        <p>Seu código de recuperação é: <strong>{token}</strong></p>
+        <p>Este código é válido por 30 minutos.</p>
+        <hr>
+        <p>Atenciosamente,<br>Equipe Impercap Suporte</p>
+        <p><img src='https://www.impercap.com.br/template/imagens/logo.png' alt='Logo Impercap' style='width:100px;height:auto;'></p>
+        <p><em>Mensagem de segurança: Nunca compartilhe seu código de recuperação com ninguém.</em></p>
+    </body>
+    </html>";
 
-        credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-            GoogleClientSecrets.FromStream(stream).Secrets,
-            Scopes,
-            "user",
-            CancellationToken.None,
-            new FileDataStore("token.json", true),
-            new LocalServerCodeReceiver(htp://localhost:7040) // Adicione a URI de redirecionamento aqui
-        );
+        var emailMessage = $"From: \"Impercap Suporte\" <aplicativoimpercap@gmail.com>\r\n" +
+                           $"To: {userEmail}\r\n" +
+                           "Subject: IMPERCAP SUPORT - RECUPERAR SENHA\r\n" +
+                           "Content-Type: text/html; charset=UTF-8\r\n\r\n" +
+                           emailBody;
 
-        // Cria o serviço do Gmail
-        var service = new Google.Apis.Gmail.v1.GmailService(new BaseClientService.Initializer()
-        {
-            HttpClientInitializer = credential,
-            ApplicationName = ApplicationName,
-        });
-
-        // Monta o e-mail
-        var emailMessage = $"From: me\r\nTo: {userEmail}\r\nSubject: Código de Recuperação de Senha\r\n\r\n" +
-                           $"Seu código de recuperação é: {token}\n" +
-                           "Este código é válido por 30 minutos.";
         var message = new Message
         {
             Raw = Base64UrlEncode(emailMessage)
@@ -54,8 +54,8 @@ public class GmailService : IEmailService
     {
         var bytes = Encoding.UTF8.GetBytes(input);
         return Convert.ToBase64String(bytes)
-            .Replace("+", "-")
-            .Replace("/", "_")
-            .Replace("=", "");
+        .Replace("+", "-")
+        .Replace("/", "_")
+        .Replace("=", "");
     }
 }

@@ -53,7 +53,17 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 
 // Configuração do EmailService
-builder.Services.AddScoped<IEmailService, GmailService>();
+builder.Services.AddScoped<IEmailService>(provider =>
+{
+    var credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_JSON");
+    var credentialPath = Path.Combine(Path.GetTempPath(), "credentials.json");
+
+    // Salve o JSON em um arquivo temporário
+    File.WriteAllText(credentialPath, credentialsJson);
+
+    var tokenPath = "token.json"; // Caminho para o arquivo de token
+    return new GmailService(credentialPath, tokenPath);
+});
 
 // Configuração do Swagger
 builder.Services.AddEndpointsApiExplorer();

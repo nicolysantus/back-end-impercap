@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   back-end: 
     build:
@@ -6,28 +8,12 @@ services:
     ports:
       - "8080:8080"
       - "8081:8081"
-    depends_on:
-      - sqlserver
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=tcp:serve-impercap.database.windows.net,1433;Database=impercap;User ID=admimpercap;Password=banco2025#2@;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;
     networks:
       - productnetwork
     restart: on-failure
 
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=Impercap2025
-    ports:
-      - "1433:1433"
-    volumes:
-      - sql_data_impercap:/var/opt/mssql
-    networks:
-      - productnetwork
-
 networks:
   productnetwork:
-
-volumes:
-  sql_data_impercap:

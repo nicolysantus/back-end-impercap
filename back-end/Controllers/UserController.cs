@@ -45,31 +45,48 @@ namespace back_end.API.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<ActionResult<bool>> CreateUser(UserModel user)
+        public IActionResult Register([FromBody] UserModel registerModel)
         {
-            // Verifica se já existe um usuário com o mesmo Username ou CPF
-            if (_context.Users.Any(u => u.Username == user.Username || u.CPF == user.CPF))
+            if (!ModelState.IsValid)
             {
-                return Conflict(new
-                {
-                    status = 409,
-                    message = "Já existe um usuário com este nome de usuário ou CPF.",
-                    traceId = HttpContext.TraceIdentifier
-                });
+                // Retorna as mensagens de erro de validação
+                return BadRequest(ModelState.Values.SelectMany(v => v.Errors)
+                                                    .Select(e => e.ErrorMessage));
             }
 
-            // Garante que o ID seja gerado corretamente
-            user.Id = Guid.NewGuid();
-
-            // Criptografa a senha
-            if (!string.IsNullOrWhiteSpace(user.Password))
+            // Verifica se o usuário já existe pelo nome de usuário
+            var existingUserByUsername = _context.Users.SingleOrDefault(u => u.Username == registerModel.Username);
+            if (existingUserByUsername != null)
             {
-                user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+                return Conflict("O nome de usuário já está em uso."); // Retorna conflito se o nome de usuário já existir
             }
 
-            // Adiciona o usuário ao banco
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            // Verifica se o CPF já existe
+            var existingUserByCpf = _context.Users.SingleOrDefault(u => u.CPF == registerModel.CPF);
+            if (existingUserByCpf != null)
+            {
+                return Conflict("O CPF já está em uso."); // Retorna conflito se o CPF já existir
+            }
+
+            // Cria um novo usuário
+            var newUser = new UserModel
+            {
+                Username = registerModel.Username,
+                Password = BCrypt.Net.BCrypt.HashPassword(registerModel.CPF), // Define a senha como o CPF
+                CPF = registerModel.CPF,
+                FirstName = registerModel.FirstName,
+                LastName = registerModel.LastName,
+                DateOfBirth = registerModel.DateOfBirth,
+                Email = registerModel.Email,
+                Address = registerModel.Address,
+                Number = registerModel.Number,
+                Neighborhood = registerModel.Neighborhood,
+                City = registerModel.City,
+                UserType = registerModel.UserType
+            };
+
+            _context.Users.Add(newUser);
+            _context.SaveChanges();
 
             return Ok(new
             {

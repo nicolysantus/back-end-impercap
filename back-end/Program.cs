@@ -1,4 +1,6 @@
 using back_end.Data;
+using back_end.Services.Interfaces;
+using back_end.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -16,12 +18,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("_myAllowSpecificOrigins",
-        policy =>
-        {
-            policy.AllowAnyOrigin() // Permitir qualquer origem
-                  .AllowAnyMethod() // Permitir qualquer método
-                  .AllowAnyHeader(); // Permitir qualquer cabeçalho
-        });
+    policy =>
+    {
+        policy.WithOrigins("https://impercap-api.onrender.com")
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
 });
 
 // Outros serviços
@@ -50,6 +52,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 
+// Configuração do EmailService
+builder.Services.AddScoped<IEmailService, GmailService>();
+
 // Configuração do Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -73,7 +78,7 @@ builder.Services.AddSwaggerGen(c =>
                 {
                     Type = ReferenceType.SecurityScheme,
                     Id = "Bearer"
-                }
+                },
             },
             new string[] {}
         }
@@ -94,13 +99,12 @@ app.MapControllers();
 // Configuração do Swagger
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
-    // Configuração do Swagger
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
         c.RoutePrefix = "swagger"; // ou "" para acessá-lo na raiz
-    }); ;
+    });
 }
 
 app.Run();

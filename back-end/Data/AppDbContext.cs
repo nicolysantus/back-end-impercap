@@ -12,6 +12,7 @@ namespace back_end.Data
         public DbSet<ManualModel> Manuals { get; set; }
         public DbSet<UserModel> Users { get; set; }
         public DbSet<LoginModel> logins { get; set; }
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

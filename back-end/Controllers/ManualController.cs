@@ -4,21 +4,19 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
-namespace back_end.API.Controllers
 
+namespace back_end.API.Controllers
 {
     [Route("api/[controller]")]
     [Authorize]
     [ApiController]
-
     public class ManualController : ControllerBase
-
     {
         private readonly AppDbContext _context;
 
         public ManualController(AppDbContext context)
-
         {
             _context = context;
         }
@@ -33,7 +31,6 @@ namespace back_end.API.Controllers
         // GET: api/manual/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<ManualModel>> GetManual(Guid id)
-
         {
             var manual = await _context.Manuals.FindAsync(id);
             if (manual == null)
@@ -41,7 +38,30 @@ namespace back_end.API.Controllers
                 return NotFound();
             }
             return manual;
+        }
 
+        // Método para fazer o upload de arquivos
+        private async Task<string> UploadFile(IFormFile file, string folderName)
+        {
+            if (file == null)
+                return null;
+
+            string fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+            string folderPath = Path.Combine("uploads", folderName);
+
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+
+            string filePath = Path.Combine(folderPath, fileName);
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            string baseUrl = $"{Request.Scheme}://{Request.Host}/";
+            return $"{baseUrl}uploads/{folderName}/{fileName}";
         }
 
         // POST: api/manual
@@ -56,57 +76,9 @@ namespace back_end.API.Controllers
                 VideoUrl = request.VideoUrl,
             };
 
-            // Definindo os caminhos das pastas
-            string imagePath = Path.Combine("uploads/images");
-            string manualPath = Path.Combine("uploads/manuals");
-            string laudoPath = Path.Combine("uploads/laudos");
-
-            // Criando as pastas se não existirem
-            if (!Directory.Exists(imagePath))
-            {
-                Directory.CreateDirectory(imagePath);
-            }
-            if (!Directory.Exists(manualPath))
-            {
-                Directory.CreateDirectory(manualPath);
-            }
-            if (!Directory.Exists(laudoPath))
-            {
-                Directory.CreateDirectory(laudoPath);
-            }
-
-            // Lógica para salvar os arquivos e criar URLs
-            string baseUrl = $"{Request.Scheme}://{Request.Host}/"; // URL base para acessar os arquivos
-
-            if (request.ImageUrl != null)
-            {
-                var fullImagePath = Path.Combine(imagePath, request.ImageUrl.FileName);
-                using (var stream = new FileStream(fullImagePath, FileMode.Create))
-                {
-                    await request.ImageUrl.CopyToAsync(stream);
-                }
-                manual.ImageUrl = $"{baseUrl}uploads/images/{request.ImageUrl.FileName}"; // URL acessível
-            }
-
-            if (request.ManualPdfUrl != null)
-            {
-                var fullManualPath = Path.Combine(manualPath, request.ManualPdfUrl.FileName);
-                using (var stream = new FileStream(fullManualPath, FileMode.Create))
-                {
-                    await request.ManualPdfUrl.CopyToAsync(stream);
-                }
-                manual.ManualPdfUrl = $"{baseUrl}uploads/manuals/{request.ManualPdfUrl.FileName}"; // URL acessível
-            }
-
-            if (request.LaudoPdfUrl != null)
-            {
-                var fullLaudoPath = Path.Combine(laudoPath, request.LaudoPdfUrl.FileName);
-                using (var stream = new FileStream(fullLaudoPath, FileMode.Create))
-                {
-                    await request.LaudoPdfUrl.CopyToAsync(stream);
-                }
-                manual.LaudoPdfUrl = $"{baseUrl}uploads/laudos/{request.LaudoPdfUrl.FileName}"; // URL acessível
-            }
+            manual.ImageUrl = await UploadFile(request.ImageUrl, "images");
+            manual.ManualPdfUrl = await UploadFile(request?.ManualPdfUrl, "manuals");
+            manual.LaudoPdfUrl = await UploadFile(request.LaudoPdfUrl, "laudos");
 
             _context.Manuals.Add(manual);
             await _context.SaveChangesAsync();
@@ -114,9 +86,7 @@ namespace back_end.API.Controllers
             return CreatedAtAction(nameof(GetManual), new { id = manual.Id }, manual);
         }
 
-
         // PUT: api/manual/{id}
-
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateManual(Guid id, [FromForm] CreateManualRequest request)
         {
@@ -126,106 +96,43 @@ namespace back_end.API.Controllers
                 return NotFound();
             }
 
-            if (request.Title != null)
-            {
-                existingManual.Title = request.Title;
-            }
-
-            if (request.Description != null)
-            {
-                existingManual.Description = request.Description;
-            }
-
-            if (request.VideoUrl != null)
-            {
-                existingManual.VideoUrl = request.VideoUrl;
-            }
-
-            // Definindo os caminhos das pastas
-            string imagePath = Path.Combine("uploads/images");
-            string manualPath = Path.Combine("uploads/manuals");
-            string laudoPath = Path.Combine("uploads/laudos");
-
-            // Criando as pastas se não existirem
-            if (!Directory.Exists(imagePath))
-            {
-                Directory.CreateDirectory(imagePath);
-            }
-            if (!Directory.Exists(manualPath))
-            {
-                Directory.CreateDirectory(manualPath);
-            }
-            if (!Directory.Exists(laudoPath))
-            {
-                Directory.CreateDirectory(laudoPath);
-            }
-
-            string baseUrl = $"{Request.Scheme}://{Request.Host}/"; // URL base para acessar os arquivos
+            existingManual.Title = request.Title ?? existingManual.Title;
+            existingManual.Description = request.Description ?? existingManual.Description;
+            existingManual.VideoUrl = request.VideoUrl ?? existingManual.VideoUrl;
 
             if (request.ImageUrl != null)
             {
-                var fullImagePath = Path.Combine(imagePath, request.ImageUrl.FileName);
-                using (var stream = new FileStream(fullImagePath, FileMode.Create))
-                {
-                    await request.ImageUrl.CopyToAsync(stream);
-                }
-                existingManual.ImageUrl = $"{baseUrl}uploads/images/{request.ImageUrl.FileName}"; // URL acessível
+                existingManual.ImageUrl = await UploadFile(request.ImageUrl, "images");
             }
-
             if (request.ManualPdfUrl != null)
             {
-                var fullManualPath = Path.Combine(manualPath, request.ManualPdfUrl.FileName);
-                using (var stream = new FileStream(fullManualPath, FileMode.Create))
-                {
-                    await request.ManualPdfUrl.CopyToAsync(stream);
-                }
-                existingManual.ManualPdfUrl = $"{baseUrl}uploads/manuals/{request.ManualPdfUrl.FileName}"; // URL acessível
+                existingManual.ManualPdfUrl = await UploadFile(request.ManualPdfUrl, "manuals");
             }
-
             if (request.LaudoPdfUrl != null)
             {
-                var fullLaudoPath = Path.Combine(laudoPath, request.LaudoPdfUrl.FileName);
-                using (var stream = new FileStream(fullLaudoPath, FileMode.Create))
-                {
-                    await request.LaudoPdfUrl.CopyToAsync(stream);
-                }
-                existingManual.LaudoPdfUrl = $"{baseUrl}uploads/laudos/{request.LaudoPdfUrl.FileName}"; // URL acessível
+                existingManual.LaudoPdfUrl = await UploadFile(request.LaudoPdfUrl, "laudos");
             }
 
             await _context.SaveChangesAsync();
-
             return NoContent();
         }
 
-
         // DELETE: api/manual/{id}
-
         [HttpDelete("{id}")]
-
         public async Task<IActionResult> DeleteManual(Guid id)
-
         {
-
             var manual = await _context.Manuals.FindAsync(id);
-
             if (manual == null)
-
             {
-
                 return NotFound();
-
             }
 
             _context.Manuals.Remove(manual);
-
             await _context.SaveChangesAsync();
-
             return NoContent();
-
         }
 
         private bool ManualExists(Guid id)
-
         {
             return _context.Manuals.Any(e => e.Id == id);
         }

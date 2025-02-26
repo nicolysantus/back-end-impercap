@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,12 +56,7 @@ builder.Services.AddControllers();
 // Configuração do EmailService
 builder.Services.AddScoped<IEmailService>(provider =>
 {
-    var credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_JSON");
-    var credentialPath = Path.Combine(Path.GetTempPath(), "credentials.json");
-
-    // Salve o JSON em um arquivo temporário
-    File.WriteAllText(credentialPath, credentialsJson);
-
+    var credentialPath = "credentials.json"; // Caminho para o arquivo de credenciais
     var tokenPath = "token.json"; // Caminho para o arquivo de token
     return new GmailService(credentialPath, tokenPath);
 });
@@ -99,6 +95,15 @@ var app = builder.Build();
 
 // Aplicar CORS antes da autenticação
 app.UseCors("_myAllowSpecificOrigins");
+
+
+// Servir os arquivos estáticos
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+           Path.Combine(builder.Environment.ContentRootPath, "uploads")),
+    RequestPath = "/uploads"
+});
 
 // Outros middlewares
 app.UseHttpsRedirection();

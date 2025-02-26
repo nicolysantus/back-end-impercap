@@ -29,7 +29,7 @@ public class GmailService : IEmailService
         <p>Este código é válido por 30 minutos.</p>
         <hr>
         <p>Atenciosamente,<br>Equipe Impercap Suporte</p>
-        <p><img src='https://www.impercap.com.br/template/imagens/logo.png' alt='Logo Impercap' style='width:100px;height:auto;'></p>
+        <p><img src='https://media.licdn.com/dms/image/v2/D4D16AQH7Lo9ei5oK_Q/profile-displaybackgroundimage-shrink_350_1400/profile-displaybackgroundimage-shrink_350_1400/0/1728296682232?e=1746057600&v=beta&t=_KUWHTqMVD-brzBpU_OONLkzz_r7kdHkJ0Sh3pC7SII' alt='Logo Impercap' style='width:600px;height:auto;'></p>
         <p><em>Mensagem de segurança: Nunca compartilhe seu código de recuperação com ninguém.</em></p>
     </body>
     </html>";

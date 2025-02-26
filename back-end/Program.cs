@@ -96,12 +96,20 @@ var app = builder.Build();
 // Aplicar CORS antes da autenticação
 app.UseCors("_myAllowSpecificOrigins");
 
+// Criar diretório de uploads se não existir
+var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+
+// Aplicar CORS antes da autenticação
+app.UseCors("_myAllowSpecificOrigins");
 
 // Servir os arquivos estáticos
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(
-           Path.Combine(builder.Environment.ContentRootPath, "uploads")),
+    FileProvider = new PhysicalFileProvider(uploadsPath),
     RequestPath = "/uploads"
 });
 

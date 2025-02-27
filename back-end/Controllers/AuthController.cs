@@ -42,14 +42,14 @@ namespace back_end.API.Controllers
 
             var token = GenerateJwtToken(user);
 
-            if (loginModel.Password == user.CPF)
+            var response = new
             {
-                return Ok(new { CPF = user.CPF });
-            }
-            else
-            {
-                return Ok(new { Token = token });
-            }
+                UserId = user.Id,
+                Token = token,
+                CPF = (loginModel.Password == user.CPF) ? user.CPF : null
+            };
+
+            return Ok(response);
         }
 
         private string GenerateJwtToken(UserModel user)

@@ -98,7 +98,7 @@ namespace back_end.API.Controllers
 
         [HttpPut("{id}")]
         [Authorize]
-        public async Task<IActionResult> UpdateUser(Guid id, UserModel user)
+        public async Task<IActionResult> UpdateUser(Guid id, UpdateUserModel user)
         {
             if (id != user.Id)
             {
@@ -110,22 +110,36 @@ namespace back_end.API.Controllers
                 });
             }
 
+            var existingUser = await _context.Users.FindAsync(id);
+            if (existingUser == null)
+            {
+                return NotFound(new
+                {
+                    status = 404,
+                    message = "Usuário não encontrado.",
+                    traceId = HttpContext.TraceIdentifier
+                });
+            }
+
+            existingUser.Username = user.Username ?? existingUser.Username;
+            existingUser.UserType = user.UserType;
+            existingUser.FirstName = user.FirstName ?? existingUser.FirstName;
+            existingUser.LastName = user.LastName ?? existingUser.LastName;
+            existingUser.CPF = user.CPF ?? existingUser.CPF;
+            existingUser.DateOfBirth = user.DateOfBirth ?? existingUser.DateOfBirth;
+            existingUser.Email = user.Email ?? existingUser.Email;
+            existingUser.Address = user.Address ?? existingUser.Address;
+            existingUser.Number = user.Number ?? existingUser.Number;
+            existingUser.Neighborhood = user.Neighborhood ?? existingUser.Neighborhood;
+            existingUser.City = user.City ?? existingUser.City;
+
             // Se a senha foi fornecida, criptografa a nova senha
             if (!string.IsNullOrWhiteSpace(user.Password))
             {
-                user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
-            }
-            else
-            {
-                // Mantém a senha existente no banco
-                var existingUser = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
-                if (existingUser != null)
-                {
-                    user.Password = existingUser.Password;
-                }
+                existingUser.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
             }
 
-            _context.Entry(user).State = EntityState.Modified;
+            _context.Entry(existingUser).State = EntityState.Modified;
 
             try
             {

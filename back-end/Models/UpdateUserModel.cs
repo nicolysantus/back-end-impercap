@@ -8,7 +8,7 @@ namespace back_end.Models
 
         public string? Username { get; set; }
 
-        public bool UserType { get; set; }
+        public bool? UserType { get; set; }
 
         public string? FirstName { get; set; }
 

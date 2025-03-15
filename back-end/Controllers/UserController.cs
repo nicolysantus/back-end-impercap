@@ -122,7 +122,6 @@ namespace back_end.API.Controllers
             }
 
             existingUser.Username = user.Username ?? existingUser.Username;
-            existingUser.UserType = user.UserType;
             existingUser.FirstName = user.FirstName ?? existingUser.FirstName;
             existingUser.LastName = user.LastName ?? existingUser.LastName;
             existingUser.CPF = user.CPF ?? existingUser.CPF;
@@ -133,10 +132,15 @@ namespace back_end.API.Controllers
             existingUser.Neighborhood = user.Neighborhood ?? existingUser.Neighborhood;
             existingUser.City = user.City ?? existingUser.City;
 
-            // Se a senha foi fornecida, criptografa a nova senha
+            
             if (!string.IsNullOrWhiteSpace(user.Password))
             {
                 existingUser.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+            }
+
+            if (user.UserType.HasValue)
+            {
+                existingUser.UserType = user.UserType.Value;
             }
 
             _context.Entry(existingUser).State = EntityState.Modified;

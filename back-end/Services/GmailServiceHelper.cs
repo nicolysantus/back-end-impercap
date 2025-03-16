@@ -1,36 +1,12 @@
 ﻿using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
+using System.Threading;
 
 public class GmailServiceHelper
 {
     private static readonly string[] Scopes = { Google.Apis.Gmail.v1.GmailService.Scope.GmailSend };
     private static readonly string ApplicationName = "Gmail API .NET Quickstart";
-    private readonly string _credentialPath;
-    private readonly string _tokenPath;
-
-    public GmailServiceHelper(string credentialPath, string tokenPath)
-    {
-        _credentialPath = credentialPath;
-        _tokenPath = tokenPath;
-    }
-
-    public async Task<UserCredential> GetUserCredentialAsync()
-    {
-        UserCredential credential;
-
-        using (var stream = new FileStream(_credentialPath, FileMode.Open, FileAccess.Read))
-        {
-            credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                GoogleClientSecrets.FromStream(stream).Secrets,
-                Scopes,
-                "user",
-                CancellationToken.None,
-                new FileDataStore(_tokenPath, true));
-        }
-
-        return credential;
-    }
 
     public async Task<Google.Apis.Gmail.v1.GmailService> GetGmailServiceAsync()
     {
@@ -41,5 +17,27 @@ public class GmailServiceHelper
             HttpClientInitializer = credential,
             ApplicationName = ApplicationName,
         });
+    }
+
+    private async Task<UserCredential> GetUserCredentialAsync()
+    {
+        var clientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
+        var clientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET");
+
+        var secrets = new ClientSecrets
+        {
+            ClientId = clientId,
+            ClientSecret = clientSecret
+        };
+
+        var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
+            secrets,
+            Scopes,
+            "user",
+            CancellationToken.None,
+            new FileDataStore("token.json", true)
+        );
+
+        return credential;
     }
 }

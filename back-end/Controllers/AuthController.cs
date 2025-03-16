@@ -81,7 +81,7 @@ namespace back_end.API.Controllers
         }
 
         [HttpPost("recover")]
-        public async Task<IActionResult> RecoverPassword([FromBody] RecoverPasswordRequest request) // Método agora é assíncrono
+        public async Task<IActionResult> RecoverPassword([FromBody] RecoverPasswordRequest request)
         {
             if (request == null)
             {
@@ -111,9 +111,28 @@ namespace back_end.API.Controllers
 
             var expiration = DateTime.UtcNow.AddMinutes(30);
             _context.PasswordResetTokens.Add(new PasswordResetToken { UserEmail = user.Email, Code = code, Expiration = expiration });
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
-            return Ok("Código de recuperação enviado ao seu e-mail.");
+            // Máscara do email
+            string maskedEmail = MaskEmail(user.Email);
+
+            return Ok($"Código de recuperação enviado ao seu e-mail: {maskedEmail}.");
+        }
+
+        // Método para mascarar o email
+        private string MaskEmail(string email)
+        {
+            var parts = email.Split('@');
+            var username = parts[0];
+            var domain = parts[1];
+
+            if (username.Length <= 4)
+            {
+                return $"{username[0]}***@{domain}";
+            }
+
+            string maskedUsername = $"{username.Substring(0, 2)}***{username.Substring(username.Length - 2)}";
+            return $"{maskedUsername}@{domain}";
         }
 
         [HttpPost("reset-password")]

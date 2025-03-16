@@ -2,7 +2,6 @@
 using Google.Apis.Auth.OAuth2.Flows;
 using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Services;
-using Google.Apis.Util;
 using Newtonsoft.Json;
 using System.IO;
 using System.Threading;
@@ -15,7 +14,6 @@ public class GmailServiceHelper
 
     private readonly string _clientId;
     private readonly string _clientSecret;
-    private readonly string _tokenFilePath;
     private readonly string _accessToken;
     private readonly string _refreshToken;
 
@@ -25,6 +23,17 @@ public class GmailServiceHelper
         _clientSecret = clientSecret;
         _accessToken = accessToken;
         _refreshToken = refreshToken;
+    }
+
+    // Método que retorna uma instância de GmailService
+    public async Task<Google.Apis.Gmail.v1.GmailService> GetGmailServiceAsync()
+    {
+        var credential = await GetUserCredentialAsync();
+        return new Google.Apis.Gmail.v1.GmailService(new BaseClientService.Initializer()
+        {
+            HttpClientInitializer = credential,
+            ApplicationName = ApplicationName,
+        });
     }
 
     private async Task<UserCredential> GetUserCredentialAsync()
@@ -45,10 +54,8 @@ public class GmailServiceHelper
             ExpiresInSeconds = 3599 // Utilize o valor de expiração que você tem
         };
 
-        // Cria a credencial do usuário
         var credential = new UserCredential(flow, "user", tokenResponse);
 
-        // Verifica se o token está obsoleto e renova se necessário
         if (credential.Token.IsStale)
         {
             await credential.RefreshTokenAsync(CancellationToken.None);

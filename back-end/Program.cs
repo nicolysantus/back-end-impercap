@@ -1,12 +1,11 @@
 using back_end.Data;
 using back_end.Services.Interfaces;
-using back_end.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,11 +55,23 @@ builder.Services.AddControllers();
 // Configuração do EmailService
 builder.Services.AddScoped<IEmailService>(provider =>
 {
-    var credentialPath = "credentials.json"; // Caminho para o arquivo de credenciais
-    var tokenPath = "token.json"; // Caminho para o arquivo de token
-    return new GmailService(credentialPath, tokenPath);
-});
+    var clientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
+    var clientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET");
+    var projectId = Environment.GetEnvironmentVariable("GOOGLE_PROJECT_ID");
+    var authUri = Environment.GetEnvironmentVariable("GOOGLE_AUTH_URI");
+    var tokenUri = Environment.GetEnvironmentVariable("GOOGLE_TOKEN_URI");
 
+    // Variáveis de ambiente estão carregadas corretamente
+    if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret) ||
+        string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(authUri) ||
+        string.IsNullOrEmpty(tokenUri))
+    {
+        throw new InvalidOperationException("Uma ou mais variáveis de ambiente estão ausentes ou são nulas.");
+    }
+
+    // Crie uma instância do GmailService com as credenciais
+    return new GmailService(clientId, clientSecret, projectId, authUri, tokenUri);
+});
 // Configuração do Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

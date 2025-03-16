@@ -6,13 +6,17 @@ using Google.Apis.Util.Store;
 using System.IO;
 using System.Text;
 
-
 public class GmailService : IEmailService
 {
     private readonly GmailServiceHelper _gmailServiceHelper;
 
-    public GmailService(string credentialPath, string tokenPath)
+    public GmailService(string clientId, string clientSecret, string projectId, string authUri, string tokenUri)
     {
+        // Use as variáveis de ambiente ou valores passados para inicializar o helper
+        var credentialPath = $"{projectId}.json"; // ou qualquer outro caminho que você queira
+        var tokenPath = "token.json"; // caminho do token
+
+        // Inicialize o GmailServiceHelper aqui, se necessário
         _gmailServiceHelper = new GmailServiceHelper(credentialPath, tokenPath);
     }
 
@@ -22,17 +26,17 @@ public class GmailService : IEmailService
 
         // Monta o e-mail em HTML
         var emailBody = $@"
-    <html>
-    <body>
-        <h2>Impercap Suporte</h2>
-        <p>Seu código de recuperação é: <strong>{token}</strong></p>
-        <p>Este código é válido por 30 minutos.</p>
-        <hr>
-        <p>Atenciosamente,<br>Equipe Impercap Suporte</p>
-        <p><img src='https://media.licdn.com/dms/image/v2/D4D16AQH7Lo9ei5oK_Q/profile-displaybackgroundimage-shrink_350_1400/profile-displaybackgroundimage-shrink_350_1400/0/1728296682232?e=1746057600&v=beta&t=_KUWHTqMVD-brzBpU_OONLkzz_r7kdHkJ0Sh3pC7SII' alt='Logo Impercap' style='width:600px;height:auto;'></p>
-        <p><em>Mensagem de segurança: Nunca compartilhe seu código de recuperação com ninguém.</em></p>
-    </body>
-    </html>";
+        <html>
+        <body>
+            <h2>Impercap Suporte</h2>
+            <p>Seu código de recuperação é: <strong>{token}</strong></p>
+            <p>Este código é válido por 30 minutos.</p>
+            <hr>
+            <p>Atenciosamente,<br>Equipe Impercap Suporte</p>
+            <p><img src='https://media.licdn.com/dms/image/v2/D4D16AQH7Lo9ei5oK_Q/profile-displaybackgroundimage-shrink_350_1400/profile-displaybackgroundimage-shrink_350_1400/0/1728296682232?e=1746057600&v=beta&t=_KUWHTqMVD-brzBpU_OONLkzz_r7kdHkJ0Sh3pC7SII' alt='Logo Impercap' style='width:600px;height:auto;'></p>
+            <p><em>Mensagem de segurança: Nunca compartilhe seu código de recuperação com ninguém.</em></p>
+        </body>
+        </html>";
 
         var emailMessage = $"From: \"Impercap Suporte\" <aplicativoimpercap@gmail.com>\r\n" +
                            $"To: {userEmail}\r\n" +

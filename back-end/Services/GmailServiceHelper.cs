@@ -16,47 +16,37 @@ public class GmailServiceHelper
     private readonly string _clientId;
     private readonly string _clientSecret;
     private readonly string _tokenFilePath;
+    private readonly string _accessToken;
+    private readonly string _refreshToken;
 
-    public GmailServiceHelper(string clientId, string clientSecret, string tokenFilePath)
+    public GmailServiceHelper(string clientId, string clientSecret, string accessToken, string refreshToken)
     {
         _clientId = clientId;
         _clientSecret = clientSecret;
-        _tokenFilePath = tokenFilePath;
-    }
-
-    public async Task<Google.Apis.Gmail.v1.GmailService> GetGmailServiceAsync()
-    {
-        var credential = await GetUserCredentialAsync();
-        return new Google.Apis.Gmail.v1.GmailService(new BaseClientService.Initializer()
-        {
-            HttpClientInitializer = credential,
-            ApplicationName = ApplicationName,
-        });
+        _accessToken = accessToken;
+        _refreshToken = refreshToken;
     }
 
     private async Task<UserCredential> GetUserCredentialAsync()
     {
-        UserCredential credential;
-
-        // Carregar o token de um arquivo
-        using (var stream = new FileStream(_tokenFilePath, FileMode.Open, FileAccess.Read))
-        using (var reader = new StreamReader(stream))
+        var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
         {
-            var json = await reader.ReadToEndAsync();
-            var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(json);
-
-            var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
+            ClientSecrets = new ClientSecrets
             {
-                ClientSecrets = new ClientSecrets
-                {
-                    ClientId = _clientId,
-                    ClientSecret = _clientSecret
-                }
-            });
+                ClientId = _clientId,
+                ClientSecret = _clientSecret
+            }
+        });
 
-            // Cria a credencial do usuário
-            credential = new UserCredential(flow, "user", tokenResponse);
-        }
+        var tokenResponse = new TokenResponse
+        {
+            AccessToken = _accessToken,
+            RefreshToken = _refreshToken,
+            ExpiresInSeconds = 3599 // Utilize o valor de expiração que você tem
+        };
+
+        // Cria a credencial do usuário
+        var credential = new UserCredential(flow, "user", tokenResponse);
 
         // Verifica se o token está obsoleto e renova se necessário
         if (credential.Token.IsStale)

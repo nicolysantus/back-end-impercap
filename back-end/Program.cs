@@ -58,14 +58,18 @@ builder.Services.AddScoped<IEmailService>(provider =>
     var clientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
     var clientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET");
 
-    var tokenFilePath = "/app/token.json";
+    // Obtendo o token do appsettings.json
+    var configuration = provider.GetRequiredService<IConfiguration>();
+    var accessToken = configuration["GoogleApi:AccessToken"];
+    var refreshToken = configuration["GoogleApi:RefreshToken"];
 
-    if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
+    if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret) || string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
     {
-        throw new InvalidOperationException("Uma ou mais variáveis de ambiente estão ausentes ou são nulas.");
+        throw new InvalidOperationException("Uma ou mais variáveis de ambiente ou configurações estão ausentes ou são nulas.");
     }
 
-    return new GmailService(clientId, clientSecret, tokenFilePath);
+    // Crie uma instância do GmailService usando os tokens
+    return new GmailService(clientId, clientSecret, accessToken, refreshToken);
 });
 // Configuração do Swagger
 builder.Services.AddEndpointsApiExplorer();

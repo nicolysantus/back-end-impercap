@@ -1,23 +1,16 @@
 ﻿using back_end.Services.Interfaces;
-using Google.Apis.Auth.OAuth2;
 using Google.Apis.Gmail.v1.Data;
 using Google.Apis.Services;
-using Google.Apis.Util.Store;
-using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 public class GmailService : IEmailService
 {
     private readonly GmailServiceHelper _gmailServiceHelper;
 
-    public GmailService(string clientId, string clientSecret, string projectId, string authUri, string tokenUri)
+    public GmailService(string clientId, string clientSecret)
     {
-        // Use as variáveis de ambiente ou valores passados para inicializar o helper
-        var credentialPath = $"{projectId}.json"; // ou qualquer outro caminho que você queira
-        var tokenPath = "token.json"; // caminho do token
-
-        // Inicialize o GmailServiceHelper aqui, se necessário
-        _gmailServiceHelper = new GmailServiceHelper(credentialPath, tokenPath);
+        _gmailServiceHelper = new GmailServiceHelper(clientId, clientSecret);
     }
 
     public async Task SendRecoveryEmail(string userEmail, string token)
@@ -58,8 +51,8 @@ public class GmailService : IEmailService
     {
         var bytes = Encoding.UTF8.GetBytes(input);
         return Convert.ToBase64String(bytes)
-        .Replace("+", "-")
-        .Replace("/", "_")
-        .Replace("=", "");
+            .Replace("+", "-")
+            .Replace("/", "_")
+            .Replace("=", "");
     }
 }

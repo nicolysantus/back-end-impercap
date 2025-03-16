@@ -1,17 +1,24 @@
 ﻿using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
-using System.Threading;
 
 public class GmailServiceHelper
 {
     private static readonly string[] Scopes = { Google.Apis.Gmail.v1.GmailService.Scope.GmailSend };
     private static readonly string ApplicationName = "Gmail API .NET Quickstart";
 
+    private readonly string _clientId;
+    private readonly string _clientSecret;
+
+    public GmailServiceHelper(string clientId, string clientSecret)
+    {
+        _clientId = clientId;
+        _clientSecret = clientSecret;
+    }
+
     public async Task<Google.Apis.Gmail.v1.GmailService> GetGmailServiceAsync()
     {
         var credential = await GetUserCredentialAsync();
-
         return new Google.Apis.Gmail.v1.GmailService(new BaseClientService.Initializer()
         {
             HttpClientInitializer = credential,
@@ -21,13 +28,10 @@ public class GmailServiceHelper
 
     private async Task<UserCredential> GetUserCredentialAsync()
     {
-        var clientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
-        var clientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET");
-
         var secrets = new ClientSecrets
         {
-            ClientId = clientId,
-            ClientSecret = clientSecret
+            ClientId = _clientId,
+            ClientSecret = _clientSecret
         };
 
         var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(

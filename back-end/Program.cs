@@ -58,7 +58,7 @@ builder.Services.AddScoped<IEmailService>(provider =>
     var clientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
     var clientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET");
 
-    var tokenFilePath = "token.json/Google.Apis.Auth.OAuth2.Responses.TokenResponse-user";
+    var tokenFilePath = "token.json";
     
     if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
     {

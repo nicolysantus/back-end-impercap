@@ -48,13 +48,14 @@ public class GmailServiceHelper
                 new FileDataStore("token.json", true)
             );
         }
-        catch
+        catch (Exception ex)
         {
-            
-            throw new InvalidOperationException("Falha ao obter credenciais do usuário.");
+            // Log do erro para diagnóstico
+            Console.WriteLine($"Erro ao obter credenciais: {ex.Message}");
+            throw new InvalidOperationException("Falha ao obter credenciais do usuário.", ex);
         }
 
-        
+
         if (credential.Token.IsStale)
         {
             await credential.RefreshTokenAsync(CancellationToken.None);

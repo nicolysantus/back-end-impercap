@@ -15,6 +15,7 @@ WORKDIR /src
 COPY ["back-end/back-end.csproj", "back-end/"]
 RUN dotnet restore "./back-end/back-end.csproj"
 COPY . .
+COPY token.json /app/token.json
 WORKDIR "/src/back-end"
 RUN dotnet build "./back-end.csproj" -c $BUILD_CONFIGURATION -o /app/build
 

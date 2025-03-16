@@ -58,8 +58,8 @@ builder.Services.AddScoped<IEmailService>(provider =>
     var clientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
     var clientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET");
 
-    var tokenFilePath = "token.json";
-    
+    var tokenFilePath = "/app/token.json";
+
     if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
     {
         throw new InvalidOperationException("Uma ou mais variáveis de ambiente estão ausentes ou são nulas.");

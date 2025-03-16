@@ -8,9 +8,9 @@ public class GmailService : IEmailService
 {
     private readonly GmailServiceHelper _gmailServiceHelper;
 
-    public GmailService(string clientId, string clientSecret)
+    public GmailService(string clientId, string clientSecret, string tokenFilePath)
     {
-        _gmailServiceHelper = new GmailServiceHelper(clientId, clientSecret);
+        _gmailServiceHelper = new GmailServiceHelper(clientId, clientSecret, tokenFilePath);
     }
 
     public async Task SendRecoveryEmail(string userEmail, string token)

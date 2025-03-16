@@ -1,7 +1,10 @@
 ﻿using Google.Apis.Auth.OAuth2;
+using Google.Apis.Auth.OAuth2.Flows;
+using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Services;
-using Google.Apis.Util.Store;
-using Google.Apis.Util; 
+using Google.Apis.Util;
+using Newtonsoft.Json;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,11 +15,13 @@ public class GmailServiceHelper
 
     private readonly string _clientId;
     private readonly string _clientSecret;
+    private readonly string _tokenFilePath;
 
-    public GmailServiceHelper(string clientId, string clientSecret)
+    public GmailServiceHelper(string clientId, string clientSecret, string tokenFilePath)
     {
         _clientId = clientId;
         _clientSecret = clientSecret;
+        _tokenFilePath = tokenFilePath;
     }
 
     public async Task<Google.Apis.Gmail.v1.GmailService> GetGmailServiceAsync()
@@ -31,31 +36,29 @@ public class GmailServiceHelper
 
     private async Task<UserCredential> GetUserCredentialAsync()
     {
-        var secrets = new ClientSecrets
-        {
-            ClientId = _clientId,
-            ClientSecret = _clientSecret
-        };
-
         UserCredential credential;
-        try
+
+        // Carregar o token de um arquivo
+        using (var stream = new FileStream(_tokenFilePath, FileMode.Open, FileAccess.Read))
+        using (var reader = new StreamReader(stream))
         {
-            credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                secrets,
-                Scopes,
-                "user",
-                CancellationToken.None,
-                new FileDataStore("token.json/Google.Apis.Auth.OAuth2.Responses.TokenResponse-user", true)
-            );
-        }
-        catch (Exception ex)
-        {
-            // Log do erro para diagnóstico
-            Console.WriteLine($"Erro ao obter credenciais: {ex.Message}");
-            throw new InvalidOperationException("Falha ao obter credenciais do usuário.", ex);
+            var json = await reader.ReadToEndAsync();
+            var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(json);
+
+            var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
+            {
+                ClientSecrets = new ClientSecrets
+                {
+                    ClientId = _clientId,
+                    ClientSecret = _clientSecret
+                }
+            });
+
+            // Cria a credencial do usuário
+            credential = new UserCredential(flow, "user", tokenResponse);
         }
 
-
+        // Verifica se o token está obsoleto e renova se necessário
         if (credential.Token.IsStale)
         {
             await credential.RefreshTokenAsync(CancellationToken.None);

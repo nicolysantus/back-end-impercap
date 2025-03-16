@@ -1,6 +1,9 @@
 ﻿using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
+using Google.Apis.Util; 
+using System.Threading;
+using System.Threading.Tasks;
 
 public class GmailServiceHelper
 {
@@ -34,13 +37,28 @@ public class GmailServiceHelper
             ClientSecret = _clientSecret
         };
 
-        var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-            secrets,
-            Scopes,
-            "user",
-            CancellationToken.None,
-            new FileDataStore("token.json", true)
-        );
+        UserCredential credential;
+        try
+        {
+            credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
+                secrets,
+                Scopes,
+                "user",
+                CancellationToken.None,
+                new FileDataStore("token.json", true)
+            );
+        }
+        catch
+        {
+            
+            throw new InvalidOperationException("Falha ao obter credenciais do usuário.");
+        }
+
+        
+        if (credential.Token.IsStale)
+        {
+            await credential.RefreshTokenAsync(CancellationToken.None);
+        }
 
         return credential;
     }

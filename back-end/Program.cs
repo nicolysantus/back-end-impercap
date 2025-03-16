@@ -58,13 +58,13 @@ builder.Services.AddScoped<IEmailService>(provider =>
     var clientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
     var clientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET");
 
-    // Verifica se as variáveis de ambiente estão carregadas corretamente
+    
     if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
     {
         throw new InvalidOperationException("Uma ou mais variáveis de ambiente estão ausentes ou são nulas.");
     }
 
-    // Crie uma instância do GmailService com as credenciais
+    
     return new GmailService(clientId, clientSecret);
 });
 // Configuração do Swagger

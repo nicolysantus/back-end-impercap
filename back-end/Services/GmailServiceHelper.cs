@@ -45,7 +45,7 @@ public class GmailServiceHelper
                 Scopes,
                 "user",
                 CancellationToken.None,
-                new FileDataStore("token.json", true)
+                new FileDataStore("token.json/Google.Apis.Auth.OAuth2.Responses.TokenResponse-user", true)
             );
         }
         catch (Exception ex)

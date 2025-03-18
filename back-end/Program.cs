@@ -20,7 +20,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("_myAllowSpecificOrigins",
     policy =>
     {
-        policy.WithOrigins("https://impercap-api.onrender.com")
+        policy.WithOrigins("https://api-impercap.onrender.com/")
               .AllowAnyMethod()
               .AllowAnyHeader();
     });

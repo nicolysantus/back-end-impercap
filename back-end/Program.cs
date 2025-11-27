@@ -1,5 +1,5 @@
 using back_end.Data;
-using back_end.Services; 
+using back_end.Services;
 using back_end.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -7,15 +7,25 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-using DotNetEnv; 
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 
 Env.Load();
 
-var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection") 
+var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING_DOCKER")
+                       ?? Environment.GetEnvironmentVariable("DB_CONNECTION_STRING_AZURE")
                        ?? Environment.GetEnvironmentVariable("DB_CONNECTION_STRING_LOCAL")
                        ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
+if (!string.IsNullOrEmpty(connectionString))
+{
+    Console.WriteLine($"[INFO] Banco de Dados configurado. String inicia com: {connectionString.Substring(0, Math.Min(20, connectionString.Length))}...");
+}
+else
+{
+    Console.WriteLine("[ERRO CRÍTICO] ConnectionString está vazia! O app vai falhar ao conectar no banco.");
+}
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString)
@@ -23,14 +33,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("_myAllowSpecificOrigins",
+    options.AddPolicy("AllowAll",
     policy =>
     {
-        policy.WithOrigins(
-                "https://api-impercap.onrender.com", 
-                "http://localhost:8081",
-                "exp://192.168.1.3:8081"
-               ) 
+        policy.AllowAnyOrigin()
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
@@ -43,7 +49,7 @@ var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? builder.Configurat
 var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? builder.Configuration["Jwt:Issuer"];
 var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? builder.Configuration["Jwt:Audience"];
 
-if (string.IsNullOrEmpty(jwtKey)) 
+if (string.IsNullOrEmpty(jwtKey))
     throw new InvalidOperationException("ERRO CRÍTICO: JWT_KEY não encontrada nas variáveis de ambiente.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -79,7 +85,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Insira o token JWT."
+        Description = "Insira o token JWT. Exemplo: Bearer 12345abcdef"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -96,13 +102,11 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// --- PIPELINE ---
 
-// Diretório de Uploads
 var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
 if (!Directory.Exists(uploadsPath)) Directory.CreateDirectory(uploadsPath);
 
-app.UseCors("_myAllowSpecificOrigins");
+app.UseCors("AllowAll");
 
 app.UseStaticFiles(new StaticFileOptions
 {
@@ -110,19 +114,18 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/uploads"
 });
 
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Impercap API V1");
+    c.RoutePrefix = "swagger";
+});
+
 app.UseHttpsRedirection();
+
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
 
-if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Impercap API V1");
-        c.RoutePrefix = "swagger"; 
-    });
-}
+app.MapControllers();
 
 app.Run();

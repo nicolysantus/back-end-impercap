@@ -8,11 +8,15 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using DotNetEnv;
+// --- IMPORTANTE: Necessário para configurar limites de upload ---
+using Microsoft.AspNetCore.Http.Features;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 1. CARREGAR VARIÁVEIS DE AMBIENTE
 Env.Load();
 
+// 2. CONFIGURAÇÃO DE BANCO DE DADOS
 var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING_DOCKER")
                        ?? Environment.GetEnvironmentVariable("DB_CONNECTION_STRING_AZURE")
                        ?? Environment.GetEnvironmentVariable("DB_CONNECTION_STRING_LOCAL")
@@ -31,6 +35,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString)
 );
 
+// 3. CORS (LIBERADO GERAL)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
@@ -43,6 +48,14 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers();
+
+// --- CORREÇÃO DE UPLOAD: AUMENTAR LIMITE DE ARQUIVOS ---
+// Isso evita que o servidor rejeite fotos grandes do iPhone
+builder.Services.Configure<FormOptions>(options =>
+{
+    // Define limite para 100 MB (aprox)
+    options.MultipartBodyLengthLimit = 104857600;
+});
 
 // 4. CONFIGURAÇÃO JWT SEGURA
 var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? builder.Configuration["Jwt:Key"];
@@ -102,6 +115,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+// --- PIPELINE DE EXECUÇÃO ---
 
 var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
 if (!Directory.Exists(uploadsPath)) Directory.CreateDirectory(uploadsPath);
@@ -114,6 +128,7 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/uploads"
 });
 
+// Swagger ativado sempre (para ajudar no debug)
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {

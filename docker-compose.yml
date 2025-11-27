@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: impercap_sql
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql_data_impercap:/var/opt/mssql
+    networks:
+      - productnetwork
+
+  # Serviço do Back-end
   back-end: 
     build:
       context: ./back-end  
@@ -8,12 +22,19 @@ services:
     ports:
       - "8080:8080"
       - "8081:8081"
+    env_file:
+      - .env
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=tcp:serve-impercap.database.windows.net,1433;Database=impercap;User ID=admimpercap;Password=banco2025#2@;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING_DOCKER}
+    depends_on:
+      - sqlserver
     networks:
       - productnetwork
     restart: on-failure
 
 networks:
   productnetwork:
+
+volumes:
+  sql_data_impercap:

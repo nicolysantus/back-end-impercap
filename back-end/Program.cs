@@ -1,4 +1,5 @@
 using back_end.Data;
+using back_end.Services; 
 using back_end.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -6,36 +7,49 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using DotNetEnv; 
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuração do banco de dados
+Env.Load();
+
+var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection") 
+                       ?? Environment.GetEnvironmentVariable("DB_CONNECTION_STRING_LOCAL")
+                       ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+    options.UseSqlServer(connectionString)
 );
 
-// Configuração do CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("_myAllowSpecificOrigins",
     policy =>
     {
-        policy.WithOrigins("https://api-impercap.onrender.com/")
+        policy.WithOrigins(
+                "https://api-impercap.onrender.com", 
+                "http://localhost:8081",
+                "exp://192.168.1.3:8081"
+               ) 
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
 });
 
-// Outros serviços
 builder.Services.AddControllers();
 
-// Configuração do JWT
-var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT key is missing in appsettings.json.");
+// 4. CONFIGURAÃ‡ÃƒO JWT SEGURA
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? builder.Configuration["Jwt:Key"];
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? builder.Configuration["Jwt:Issuer"];
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? builder.Configuration["Jwt:Audience"];
+
+if (string.IsNullOrEmpty(jwtKey)) 
+    throw new InvalidOperationException("ERRO CRÃTICO: JWT_KEY nÃ£o encontrada nas variÃ¡veis de ambiente.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.RequireHttpsMetadata = true;
+        options.RequireHttpsMetadata = false;
         options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -43,35 +57,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddControllers();
 
-// Configuração do EmailService
-builder.Services.AddScoped<IEmailService>(provider =>
-{
-    var clientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
-    var clientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET");
+// 5. INJEÃ‡ÃƒO DO SERVIÃ‡O DE E-MAIL (SMTP)
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 
-    // Obtendo o token do appsettings.json
-    var configuration = provider.GetRequiredService<IConfiguration>();
-    var accessToken = configuration["GoogleApi:AccessToken"];
-    var refreshToken = configuration["GoogleApi:RefreshToken"];
-
-    if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret) || string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
-    {
-        throw new InvalidOperationException("Uma ou mais variáveis de ambiente ou configurações estão ausentes ou são nulas.");
-    }
-
-    // Crie uma instância do GmailService usando os tokens
-    return new GmailService(clientId, clientSecret, accessToken, refreshToken);
-});
-// Configuração do Swagger
+// 6. SWAGGER
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -82,7 +79,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Insira o token JWT no formato: Bearer {seu_token}"
+        Description = "Insira o token JWT."
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -90,11 +87,7 @@ builder.Services.AddSwaggerGen(c =>
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                },
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             },
             new string[] {}
         }
@@ -103,40 +96,32 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Aplicar CORS antes da autenticação
-app.UseCors("_myAllowSpecificOrigins");
+// --- PIPELINE ---
 
-// Criar diretório de uploads se não existir
+// DiretÃ³rio de Uploads
 var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
-if (!Directory.Exists(uploadsPath))
-{
-    Directory.CreateDirectory(uploadsPath);
-}
+if (!Directory.Exists(uploadsPath)) Directory.CreateDirectory(uploadsPath);
 
-// Aplicar CORS antes da autenticação
 app.UseCors("_myAllowSpecificOrigins");
 
-// Servir os arquivos estáticos
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(uploadsPath),
     RequestPath = "/uploads"
 });
 
-// Outros middlewares
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Configuração do Swagger
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-        c.RoutePrefix = "swagger"; // ou "" para acessá-lo na raiz
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Impercap API V1");
+        c.RoutePrefix = "swagger"; 
     });
 }
 
